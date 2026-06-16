@@ -24,7 +24,6 @@ export default function TreatmentDetail({ lang, treatment, clinicDetails, naviga
       expectTitle: "What to Expect",
       dosTitle: "Do's (Follow These)",
       dontsTitle: "Don'ts (Avoid These)",
-      medicineTitle: "Medicine Reminders",
       feedbackTitle: "Was this guide helpful?",
       feedbackSub: "Help us improve our patient care by sharing your quick feedback.",
       feedbackLabel: "Comments / Suggestions",
@@ -38,7 +37,6 @@ export default function TreatmentDetail({ lang, treatment, clinicDetails, naviga
       expectTitle: "எதை எதிர்பார்க்கலாம்",
       dosTitle: "செய்ய வேண்டியவை",
       dontsTitle: "தவிர்க்க வேண்டியவை",
-      medicineTitle: "மருந்து நினைவூட்டல்கள்",
       feedbackTitle: "இந்த வழிகாட்டி உங்களுக்கு உதவியதா?",
       feedbackSub: "உங்கள் கருத்துக்களைப் பகிர்வதன் மூலம் எங்களது வழிகாட்டலை மேம்படுத்த உதவுங்கள்.",
       feedbackLabel: "கருத்துகள் / ஆலோசனைகள்",
@@ -131,6 +129,13 @@ export default function TreatmentDetail({ lang, treatment, clinicDetails, naviga
               {treatment.dos[lang].map((item, idx) => (
                 <li key={idx} className="list-item">{item}</li>
               ))}
+              {treatment.medicine && treatment.medicine[lang]?.length > 0 && (
+                <li className="list-item">
+                  {lang === 'en' 
+                    ? 'Take prescribed medicines as directed.' 
+                    : 'பரிந்துரைக்கப்பட்ட மருந்துகளை அறிவுறுத்தலின்படி உட்கொள்ளவும்.'}
+                </li>
+              )}
             </ul>
           </div>
         )}
@@ -153,30 +158,6 @@ export default function TreatmentDetail({ lang, treatment, clinicDetails, naviga
           </div>
         )}
       </div>
-
-      {/* Medicine Reminders */}
-      {treatment.medicine && treatment.medicine[lang]?.length > 0 && (
-        <div className="card card-medicine">
-          <h2 className="detail-section-title">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--indigo-500)' }}>
-              <path d="M4.82 4.82A8 8 0 0 1 19.18 19.18M19.18 4.82A8 8 0 0 0 4.82 19.18"></path>
-              <line x1="12" y1="4" x2="12" y2="20"></line>
-            </svg>
-            {t.medicineTitle}
-          </h2>
-          {treatment.medicine[lang].map((item, idx) => {
-            const parts = item.split(':');
-            const title = parts[0];
-            const desc = parts.slice(1).join(':').trim();
-            return (
-              <div key={idx} className="medicine-card">
-                <div className="medicine-title">{title}</div>
-                {desc && <div className="medicine-desc">{desc}</div>}
-              </div>
-            );
-          })}
-        </div>
-      )}
 
       {/* Feedback Form */}
       <div className="card" style={{ marginTop: '32px' }}>
