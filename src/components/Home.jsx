@@ -215,7 +215,7 @@ export default function Home({ lang, treatments, clinicDetails, navigateTo }) {
             <p className="emergency-description-body">{t.emergencyDesc}</p>
           </div>
         </div>
-        <a href="tel:+914412345678" className="btn btn-emergency-call" onClick={(e) => e.stopPropagation()}>
+        <a href="tel:04442101660" className="btn btn-emergency-call" onClick={(e) => e.stopPropagation()}>
           {t.callClinic}
         </a>
       </div>
@@ -234,6 +234,11 @@ export default function Home({ lang, treatments, clinicDetails, navigateTo }) {
         <p className="footer-hours">
           {t.workingHours}
         </p>
+        <p className="footer-contact" style={{ marginTop: '8px' }}>
+          <strong>{lang === 'en' ? 'Phone:' : 'தொலைபேசி:'}</strong>{' '}
+          <a href="tel:04442101660" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 'bold' }}>044-42101660</a> /{' '}
+          <a href="tel:04442101802" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 'bold' }}>044-42101802</a>
+        </p>
 
         {/* Google Map Embed */}
         <div className="footer-map-container">
@@ -247,6 +252,20 @@ export default function Home({ lang, treatments, clinicDetails, navigateTo }) {
             loading="lazy"
             referrerPolicy="no-referrer-when-downgrade"
           ></iframe>
+        </div>
+
+        {/* Developer Credit */}
+        <div className="developer-credit" style={{ marginTop: '24px', fontSize: '0.85rem', color: 'var(--text-muted)', textAlign: 'center', borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
+          {lang === 'en' ? 'Developed by Chakradhar (' : 'வடிவமைத்தவர் சக்ரதர் ('}
+          <a 
+            href="https://www.linkedin.com/in/chakradhar-danesh/" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: '600' }}
+          >
+            {lang === 'en' ? 'Contact' : 'தொடர்புக்கு'}
+          </a>
+          {')'}
         </div>
       </div>
 

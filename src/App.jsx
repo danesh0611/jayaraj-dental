@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Header from './components/Header';
 import Home from './components/Home';
 import TreatmentDetail from './components/TreatmentDetail';
+import ChatAssistant from './components/ChatAssistant';
 import { getTreatments, getClinicDetails } from './utils/storage';
 
 function App() {
@@ -79,34 +80,43 @@ function App() {
   const activeTreatment = view === 'treatment' ? treatments.find(t => t.id === subViewId) : null;
 
   return (
-    <div className="app-container">
-      {/* Clinic Header with Accessibility Controls and Language Toggles */}
-      <Header 
-        lang={lang} 
-        setLang={setLang} 
-        clinicName={clinicDetails.name}
-      />
+    <>
+      <div className="app-container">
+        {/* Clinic Header with Accessibility Controls and Language Toggles */}
+        <Header 
+          lang={lang} 
+          setLang={setLang} 
+          clinicName={clinicDetails.name}
+        />
 
-      {/* Primary Page Router */}
-      <main className="app-main">
-        {view === 'home' && (
-          <Home 
-            lang={lang} 
-            treatments={treatments} 
-            clinicDetails={clinicDetails} 
-            navigateTo={navigateTo} 
-          />
-        )}
-        {view === 'treatment' && (
-          <TreatmentDetail 
-            lang={lang} 
-            treatment={activeTreatment} 
-            clinicDetails={clinicDetails} 
-            navigateTo={navigateTo} 
-          />
-        )}
-      </main>
-    </div>
+        {/* Primary Page Router */}
+        <main className="app-main">
+          {view === 'home' && (
+            <Home 
+              lang={lang} 
+              treatments={treatments} 
+              clinicDetails={clinicDetails} 
+              navigateTo={navigateTo} 
+            />
+          )}
+          {view === 'treatment' && (
+            <TreatmentDetail 
+              lang={lang} 
+              treatment={activeTreatment} 
+              clinicDetails={clinicDetails} 
+              navigateTo={navigateTo} 
+            />
+          )}
+        </main>
+      </div>
+
+      {/* Floating LLM Chat Assistant */}
+      <ChatAssistant 
+        lang={lang}
+        activeTreatment={activeTreatment}
+        clinicDetails={clinicDetails}
+      />
+    </>
   );
 }
 
