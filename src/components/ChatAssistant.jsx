@@ -8,6 +8,8 @@ export default function ChatAssistant({ lang, activeTreatment, clinicDetails }) 
   const messagesEndRef = useRef(null);
 
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
+  const groqApiKey = import.meta.env.VITE_GROQ_API_KEY || '';
+  const hasActiveAI = (apiKey && apiKey !== 'AIzaSy...') || !!groqApiKey;
 
   const t = {
     en: {
@@ -150,28 +152,44 @@ export default function ChatAssistant({ lang, activeTreatment, clinicDetails }) 
     if (!textToSend) setInput('');
     setIsTyping(true);
 
-    // If API key is available, use Gemini
-    if (apiKey && apiKey !== 'AIzaSy...') {
-      try {
-        // Build context guidelines
-        let context = `You are a helpful dental care AI assistant for Jayaraj Dental Clinic. 
+    const hasGemini = apiKey && apiKey !== 'AIzaSy...';
+    const hasGroq = !!groqApiKey;
+
+    if (!hasGemini && !hasGroq) {
+      // Purely local fallback mode with simulated delay
+      setTimeout(() => {
+        const responseText = getLocalResponse(query);
+        setMessages(prev => [...prev, { sender: 'bot', text: responseText }]);
+        setIsTyping(false);
+      }, 750);
+      return;
+    }
+
+    // Build context guidelines
+    let context = `You are a helpful dental care AI assistant for Jayaraj Dental Clinic. 
 Chief dentist is Dr. P.B. Anand. The clinic address is No.15, 2, E Mada St, Mylapore, Chennai, Tamil Nadu 600004. Contact numbers are 044-42101660 and 044-42101802.
 Answer the patient's questions politely, clearly, and concisely. Respond in the language the user asked (English or Tamil).
 If you do not know the answer or it is a medical emergency, recommend calling the clinic immediately at 044-42101660.`;
 
-        if (activeTreatment) {
-          const title = activeTreatment.title.en;
-          const expect = activeTreatment.expect ? activeTreatment.expect.en.join('; ') : '';
-          const dos = activeTreatment.dos ? activeTreatment.dos.en.join('; ') : '';
-          const donts = activeTreatment.donts ? activeTreatment.donts.en.join('; ') : '';
-          context += `\n\nThe patient is currently viewing instructions for "${title}". 
+    if (activeTreatment) {
+      const title = activeTreatment.title.en;
+      const expect = activeTreatment.expect ? activeTreatment.expect.en.join('; ') : '';
+      const dos = activeTreatment.dos ? activeTreatment.dos.en.join('; ') : '';
+      const donts = activeTreatment.donts ? activeTreatment.donts.en.join('; ') : '';
+      context += `\n\nThe patient is currently viewing instructions for "${title}". 
 Here are the clinic's official post-care guidelines for this treatment:
 - What to expect: ${expect}
 - Do's: ${dos}
 - Don'ts: ${donts}
 Please make sure to reference these specific guidelines if the patient asks about this treatment.`;
-        }
+    }
 
+    let success = false;
+    let botResponseText = '';
+
+    // 1. Try Gemini first
+    if (hasGemini) {
+      try {
         const response = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`,
           {
@@ -198,32 +216,78 @@ Please make sure to reference these specific guidelines if the patient asks abou
         );
 
         if (!response.ok) {
-          throw new Error('API request failed');
+          throw new Error(`Gemini request failed with status: ${response.status}`);
         }
 
         const data = await response.json();
-        const botText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-        if (botText) {
-          setMessages(prev => [...prev, { sender: 'bot', text: botText.trim() }]);
+        botResponseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        if (botResponseText) {
+          success = true;
         } else {
-          throw new Error('Empty response');
+          throw new Error('Gemini returned empty response');
         }
       } catch (err) {
-        console.error("Gemini API Error, falling back to local responder", err);
-        const fallbackText = getLocalResponse(query);
-        setMessages(prev => [...prev, { sender: 'bot', text: fallbackText }]);
-      } finally {
-        setIsTyping(false);
+        console.warn("Gemini API Error, attempting Groq fallback...", err);
       }
-    } else {
-      // Local fallback mode
-      setTimeout(() => {
-        const responseText = getLocalResponse(query);
-        setMessages(prev => [...prev, { sender: 'bot', text: responseText }]);
-        setIsTyping(false);
-      }, 750);
     }
+
+    // 2. Try Groq fallback if Gemini failed or skipped
+    if (!success && hasGroq) {
+      try {
+        const response = await fetch(
+          'https://api.groq.com/openai/v1/chat/completions',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${groqApiKey}`
+            },
+            body: JSON.stringify({
+              model: 'llama-3.3-70b-versatile',
+              messages: [
+                {
+                  role: 'system',
+                  content: context
+                },
+                {
+                  role: 'user',
+                  content: query
+                }
+              ],
+              temperature: 0.5,
+              max_tokens: 500
+            })
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`Groq request failed with status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        botResponseText = data.choices?.[0]?.message?.content || '';
+        if (botResponseText) {
+          success = true;
+        } else {
+          throw new Error('Groq returned empty response');
+        }
+      } catch (err) {
+        console.warn("Groq API Error, falling back to local responder", err);
+      }
+    }
+
+
+    // 3. Complete response or handle final local fallback
+    if (success && botResponseText) {
+      setMessages(prev => [...prev, { sender: 'bot', text: botResponseText.trim() }]);
+    } else {
+      console.warn("All APIs failed or were unavailable, using local responder");
+      const fallbackText = getLocalResponse(query);
+      setMessages(prev => [...prev, { sender: 'bot', text: fallbackText }]);
+    }
+    setIsTyping(false);
   };
+
 
   return (
     <div className="assistant-container">
@@ -255,7 +319,7 @@ Please make sure to reference these specific guidelines if the patient asks abou
               <h4 className="assistant-title">{t.botName}</h4>
               <span className="assistant-status">
                 <span className="status-dot"></span>
-                {apiKey ? t.statusOnline : t.statusDemo}
+                {hasActiveAI ? t.statusOnline : t.statusDemo}
               </span>
             </div>
             <button className="assistant-close" onClick={() => setIsOpen(false)}>
